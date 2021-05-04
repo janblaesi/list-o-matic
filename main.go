@@ -10,7 +10,10 @@ func main() {
 	lists = make(map[uuid.UUID]TalkingList)
 	readListFromFile()
 
-	setup_routes(router)
+	setupRoutes(router)
 
-	router.Run()
+	if err := router.Run(); err != nil {
+		println("Failed to start Web Server: ", err.Error())
+		return
+	}
 }

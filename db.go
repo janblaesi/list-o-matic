@@ -11,39 +11,47 @@ import (
 var lists map[uuid.UUID]TalkingList
 
 func dumpListToFile() {
-	var raw_bytes bytes.Buffer
-	enc := gob.NewEncoder(&raw_bytes)
+	var rawBytes bytes.Buffer
+	enc := gob.NewEncoder(&rawBytes)
 
 	if err := enc.Encode(lists); err != nil {
-		println(err.Error())
+		println("Failed to encode database for dumping: ", err.Error())
 		return
 	}
 
 	fh, err := os.Create("talking_lists")
 	if err != nil {
-		println(err.Error())
+		println("Failed to open database dump file: ", err.Error())
 		return
 	}
 	defer fh.Close()
 
-	fh.Write(raw_bytes.Bytes())
+	_, err = fh.Write(rawBytes.Bytes())
+	if err != nil {
+		println("Failed to dump current database to file: ", err.Error())
+		return
+	}
 }
 
 func readListFromFile() {
-	var raw_bytes bytes.Buffer
-	dec := gob.NewDecoder(&raw_bytes)
+	var rawBytes bytes.Buffer
+	dec := gob.NewDecoder(&rawBytes)
 
 	fh, err := os.Open("talking_lists")
 	if err != nil {
-		println(err.Error())
+		println("Failed to open database dump file: ", err.Error())
 		return
 	}
 	defer fh.Close()
 
-	raw_bytes.ReadFrom(fh)
+	_, err = rawBytes.ReadFrom(fh)
+	if err != nil {
+		println("Failed to read from database dump file: ", err.Error())
+		return
+	}
 
 	if err := dec.Decode(&lists); err != nil {
-		println(err.Error())
+		println("Failed to decode database: ", err.Error())
 		return
 	}
 }
