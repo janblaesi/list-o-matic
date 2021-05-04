@@ -10,6 +10,11 @@ import (
 
 var lists map[uuid.UUID]TalkingList
 
+func initDb() {
+	lists = make(map[uuid.UUID]TalkingList)
+	readListFromFile()
+}
+
 func dumpListToFile() {
 	var rawBytes bytes.Buffer
 	enc := gob.NewEncoder(&rawBytes)
