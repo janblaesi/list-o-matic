@@ -178,6 +178,57 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusOK)
 	})
 
+	router.GET("/list/:uuid/time_distribution", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			println(err.Error())
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		groupTimeShare := make(map[uuid.UUID]time.Duration)
+		totalTime := time.Duration(0)
+		for uuid := range listEntry.Groups {
+			groupTimeShare[uuid] = 0
+		}
+		for _, contribution := range listEntry.PastContributions {
+			groupTimeShare[contribution.GroupUuid] += contribution.Duration
+			totalTime += contribution.Duration
+		}
+
+		context.JSON(http.StatusOK, gin.H{
+			"time_share": groupTimeShare,
+			"total_time": totalTime,
+		})
+	})
+
+	router.GET("/list/:uuid/reset_past_contributions", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			println(err.Error())
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		listEntry.PastContributions = make([]TalkingListContribution, 0)
+		lists[listUuid] = listEntry
+		dumpListToFile()
+
+		context.Status(http.StatusOK)
+	})
+
 	router.GET("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
