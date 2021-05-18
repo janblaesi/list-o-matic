@@ -193,18 +193,21 @@ func setupRoutes(router *gin.Engine) {
 		}
 
 		groupTimeShare := make(map[uuid.UUID]time.Duration)
+		groupNumberContributions := make(map[uuid.UUID]uint)
 		totalTime := time.Duration(0)
 		for uuid := range listEntry.Groups {
 			groupTimeShare[uuid] = 0
 		}
 		for _, contribution := range listEntry.PastContributions {
 			groupTimeShare[contribution.GroupUuid] += contribution.Duration
+			groupNumberContributions[contribution.GroupUuid]++
 			totalTime += contribution.Duration
 		}
 
 		context.JSON(http.StatusOK, gin.H{
-			"time_share": groupTimeShare,
-			"total_time": totalTime,
+			"time_share":           groupTimeShare,
+			"total_time":           totalTime,
+			"number_contributions": groupNumberContributions,
 		})
 	})
 
@@ -330,13 +333,6 @@ func setupRoutes(router *gin.Engine) {
 		groupEntry, entryPresent := listEntry.Groups[groupUuid]
 		if !entryPresent {
 			context.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-
-		var requestData TalkingListApplication
-		if err := context.ShouldBindJSON(&requestData); err != nil {
-			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
