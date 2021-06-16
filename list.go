@@ -39,7 +39,14 @@ func setupRoutes(router *gin.Engine) {
 			return
 		}
 
+		groupUuid := uuid.New()
+		var groupData TalkingListGroup
+		groupData.Name = "Redner"
+		requestData.Groups = make(map[uuid.UUID]TalkingListGroup)
+		requestData.Groups[groupUuid] = groupData
+
 		lists[listUuid] = requestData
+
 		dumpListToFile()
 
 		context.Status(http.StatusCreated)
