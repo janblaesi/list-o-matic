@@ -30,3 +30,13 @@ type TalkingList struct {
 	CurrentContribution TalkingListContribution        `json:"current_contribution" binding:"-"`
 	PastContributions   []TalkingListContribution      `json:"past_contributions" binding:"-"`
 }
+
+type User struct {
+	Username string
+	IsAdmin  bool
+}
+
+type Login struct {
+	Username string `form:"username" json:"username" binding:"required`
+	Password string `form:"password" json:"password" binding:"required`
+}

@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func setupRoutes(router *gin.Engine) {
-	router.GET("/list", func(context *gin.Context) {
+func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
+	public.GET("/list", func(context *gin.Context) {
 		context.JSON(http.StatusOK, lists)
 	})
 
-	router.GET("/list/:uuid", func(context *gin.Context) {
+	public.GET("/list/:uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -29,7 +29,7 @@ func setupRoutes(router *gin.Engine) {
 		context.JSON(http.StatusOK, listEntry)
 	})
 
-	router.POST("/list", func(context *gin.Context) {
+	protected.POST("/list", func(context *gin.Context) {
 		listUuid := uuid.New()
 
 		var requestData TalkingList
@@ -52,7 +52,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusCreated)
 	})
 
-	router.DELETE("/list/:uuid", func(context *gin.Context) {
+	protected.DELETE("/list/:uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -71,7 +71,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusOK)
 	})
 
-	router.GET("/list/:uuid/group", func(context *gin.Context) {
+	public.GET("/list/:uuid/group", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -88,7 +88,7 @@ func setupRoutes(router *gin.Engine) {
 		context.JSON(http.StatusOK, listEntry.Groups)
 	})
 
-	router.GET("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
+	public.GET("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -118,7 +118,7 @@ func setupRoutes(router *gin.Engine) {
 		context.JSON(http.StatusOK, groupEntry)
 	})
 
-	router.POST("/list/:uuid/group", func(context *gin.Context) {
+	protected.POST("/list/:uuid/group", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -151,7 +151,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusCreated)
 	})
 
-	router.DELETE("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
+	protected.DELETE("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -185,7 +185,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusOK)
 	})
 
-	router.GET("/list/:uuid/time_distribution", func(context *gin.Context) {
+	public.GET("/list/:uuid/time_distribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -218,7 +218,7 @@ func setupRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.GET("/list/:uuid/reset_past_contributions", func(context *gin.Context) {
+	protected.GET("/list/:uuid/reset_past_contributions", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -239,7 +239,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusOK)
 	})
 
-	router.GET("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
+	public.GET("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -269,7 +269,7 @@ func setupRoutes(router *gin.Engine) {
 		context.JSON(http.StatusOK, groupEntry.Applications)
 	})
 
-	router.POST("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
+	public.POST("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -313,10 +313,12 @@ func setupRoutes(router *gin.Engine) {
 		lists[listUuid] = listEntry
 		dumpListToFile()
 
-		context.Status(http.StatusCreated)
+		context.JSON(http.StatusCreated, gin.H{
+			"uuid": applicationUuid,
+		})
 	})
 
-	router.DELETE("/list/:uuid/group/:group_uuid/application/:application_uuid", func(context *gin.Context) {
+	public.DELETE("/list/:uuid/group/:group_uuid/application/:application_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -358,7 +360,7 @@ func setupRoutes(router *gin.Engine) {
 		context.Status(http.StatusOK)
 	})
 
-	router.GET("/list/:uuid/start_contribution", func(context *gin.Context) {
+	protected.GET("/list/:uuid/start_contribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -417,7 +419,7 @@ func setupRoutes(router *gin.Engine) {
 		dumpListToFile()
 	})
 
-	router.GET("/list/:uuid/stop_contribution", func(context *gin.Context) {
+	protected.GET("/list/:uuid/stop_contribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
