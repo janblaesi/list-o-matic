@@ -1,0 +1,8 @@
+---
+
+database:
+  talking_lists: "talking_lists.json"
+  users: "users.json"
+authentication:
+  secret: "very secret"
+  timeout_seconds: 86400
