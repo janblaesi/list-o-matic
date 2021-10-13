@@ -1,4 +1,4 @@
-module listomatic/backend
+module github.com/janblaesi/list-o-matic
 
 go 1.17
 
@@ -7,6 +7,7 @@ require (
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.4
 	github.com/google/uuid v1.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -26,5 +27,4 @@ require (
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
