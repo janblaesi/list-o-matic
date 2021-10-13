@@ -9,10 +9,12 @@ import (
 )
 
 func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
+	// Retrieve all talking lists currently known to the application
 	public.GET("/list", func(context *gin.Context) {
 		context.JSON(http.StatusOK, lists)
 	})
 
+	// Retrieve a specific talking list
 	public.GET("/list/:uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -29,6 +31,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.JSON(http.StatusOK, listEntry)
 	})
 
+	// Create a new talking list
 	protected.POST("/list", func(context *gin.Context) {
 		listUuid := uuid.New()
 
@@ -52,6 +55,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusCreated)
 	})
 
+	// Delete a talking list
 	protected.DELETE("/list/:uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -71,6 +75,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusOK)
 	})
 
+	// Retrieve all groups in a specific talking list
 	public.GET("/list/:uuid/group", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -88,6 +93,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.JSON(http.StatusOK, listEntry.Groups)
 	})
 
+	// Retrieve a single group in a specific talking list
 	public.GET("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -118,6 +124,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.JSON(http.StatusOK, groupEntry)
 	})
 
+	// Create a group in a specific talking list
 	protected.POST("/list/:uuid/group", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -151,6 +158,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusCreated)
 	})
 
+	// Delete a group from a specific talking list
 	protected.DELETE("/list/:uuid/group/:group_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -185,6 +193,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusOK)
 	})
 
+	// Get the time distribution between groups in a specific talking list
 	public.GET("/list/:uuid/time_distribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -218,6 +227,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		})
 	})
 
+	// Reset the list of previous contributions in a specific talking list
 	protected.GET("/list/:uuid/reset_past_contributions", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -239,6 +249,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusOK)
 	})
 
+	// Get the list of applications in a specific talking group
 	public.GET("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -269,6 +280,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.JSON(http.StatusOK, groupEntry.Applications)
 	})
 
+	// Add an application in a specific talking group
 	public.POST("/list/:uuid/group/:group_uuid/application", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -318,6 +330,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		})
 	})
 
+	// Delete an application from a talking group
 	public.DELETE("/list/:uuid/group/:group_uuid/application/:application_uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -360,6 +373,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		context.Status(http.StatusOK)
 	})
 
+	// Start the contribution (from an application)
 	protected.GET("/list/:uuid/start_contribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
@@ -419,6 +433,7 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		dumpListToFile()
 	})
 
+	// Stop the current application
 	protected.GET("/list/:uuid/stop_contribution", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {

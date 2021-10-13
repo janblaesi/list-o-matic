@@ -5,69 +5,36 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
-	jwt "github.com/appleboy/gin-jwt/v2"
 )
 
 func main() {
+	// Start by loading the configuration, fail if it does not exist
+	if err := cfgLoad(); err != nil {
+		log.Fatal("Failed to load configuration file.")
+	}
+
+	// Then try to load the pseudo database of talking lists
+	if err := setupDatabase(); err != nil {
+		log.Print("Could not load an existing database, creating a new one.")
+	}
+
+	// Setup gin-gonic Library
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	// Modern browsers use CORS preflighting for requests to ensure higher
+	// security.
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AddAllowHeaders("Authorization")
+	corsConfig.AddAllowHeaders("Content-Type")
 	router.Use(cors.New(corsConfig))
 
-	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "List-O-Matic",
-		Key:         []byte("very secret"),
-		IdentityKey: "id",
-		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if v, ok := data.(*User); ok {
-				return jwt.MapClaims{
-					"id":       v.Username,
-					"is_admin": v.IsAdmin,
-				}
-			}
-			return jwt.MapClaims{}
-		},
-		IdentityHandler: func(c *gin.Context) interface{} {
-			claims := jwt.ExtractClaims(c)
-			return &User{
-				Username: claims["id"].(string),
-			}
-		},
-		Authenticator: func(c *gin.Context) (interface{}, error) {
-			var loginVals Login
-			if err := c.ShouldBind(&loginVals); err != nil {
-				return "", jwt.ErrMissingLoginValues
-			}
-			username := loginVals.Username
-			password := loginVals.Password
-
-			// logik hier
-			if username == "admin" && password == "admin" {
-				return &User{
-					Username: username,
-					IsAdmin:  true,
-				}, nil
-			}
-
-			return nil, jwt.ErrFailedAuthentication
-		},
-	})
-
-	if err != nil {
-		log.Fatal("Failed to initialize JWT subsystem: " + err.Error())
-		return
+	// Setup authentication middleware
+	if err := authSetup(); err != nil {
+		log.Fatal("Setting up authentication subsystem failed.")
 	}
-
-	if err = authMiddleware.MiddlewareInit(); err != nil {
-		log.Fatal("Failed to initialize JWT subsystem: " + err.Error())
-		return
-	}
-
 	router.POST("/login", authMiddleware.LoginHandler)
 
 	protected := router.Group("/protected")
@@ -77,10 +44,7 @@ func main() {
 		setupRoutes(public, protected)
 	}
 
-	initDb()
-
-	if err = router.Run(); err != nil {
-		log.Fatal("Failed to start Web Server: " + err.Error())
-		return
+	if err := router.Run(); err != nil {
+		log.Fatal("Failed to start web server")
 	}
 }
