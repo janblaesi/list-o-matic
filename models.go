@@ -68,6 +68,9 @@ type TalkingList struct {
 	Name string `json:"name" binding:"required"`
 
 	// Visibility of this talking list
+	// 0 means this list is private, it can only be seen by administrators
+	// 1 means this list is unlisted, it can be seen by administrators and those who have a link
+	// 2 means this list is public, it can be seen by everybody
 	Visibility int `json:"visibility" binding:"-"`
 
 	// Talking groups that are part of this event
@@ -79,4 +82,11 @@ type TalkingList struct {
 
 	// The list of previous contributions
 	PastContributions []TalkingListContribution `json:"past_contributions" binding:"-"`
+}
+
+// TalkingListVisibilityUpdate represents a request to change the
+// visibility of a talking list
+type TalkingListVisibilityUpdate struct {
+	// The new visibility of the list
+	NewVisibility int `json:"new_visibility"`
 }

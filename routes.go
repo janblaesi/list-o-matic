@@ -27,11 +27,52 @@ import (
 func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 	// Retrieve all talking lists currently known to the application
 	public.GET("/list", func(context *gin.Context) {
+		listsFiltered := make(map[uuid.UUID]TalkingList)
+
+		// Filter lists so only public lists are returned
+		for key, list := range lists {
+			if list.Visibility == 2 {
+				listsFiltered[key] = list
+			}
+		}
+
+		context.JSON(http.StatusOK, listsFiltered)
+	})
+
+	// Retrieve all talking lists currently known to the application
+	// In contrast to the public endpoint, this will also retrieve
+	// private lists
+	protected.GET("/list", func(context *gin.Context) {
 		context.JSON(http.StatusOK, lists)
 	})
 
 	// Retrieve a specific talking list
 	public.GET("/list/:uuid", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		// This endpoint may only access lists that are unlisted or public
+		if listEntry.Visibility == 0 {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		context.JSON(http.StatusOK, listEntry)
+	})
+
+	// Retrieve a specific talking list
+	// In contrast to the public endpoint, this will also retrieve
+	// private lists
+	protected.GET("/list/:uuid", func(context *gin.Context) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
@@ -54,7 +95,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		var requestData TalkingList
 		if err := context.ShouldBindJSON(&requestData); err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -69,6 +109,33 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		dumpListToFile()
 
 		context.Status(http.StatusCreated)
+	})
+
+	// Update the visibility of a talking list
+	protected.POST("/list/:uuid/visibility", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		var requestData TalkingListVisibilityUpdate
+		if err := context.ShouldBindJSON(&requestData); err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry.Visibility = requestData.NewVisibility
+		lists[listUuid] = listEntry
+		dumpListToFile()
+
+		context.Status(http.StatusOK)
 	})
 
 	// Delete a talking list
@@ -96,7 +163,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -114,7 +180,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -127,7 +192,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		groupUuid, err := uuid.Parse(context.Param("group_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -145,7 +209,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -158,7 +221,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		var requestData TalkingListGroup
 		if err := context.ShouldBindJSON(&requestData); err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -179,7 +241,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -192,7 +253,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		groupUuid, err := uuid.Parse(context.Param("group_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -214,7 +274,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -248,7 +307,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -270,7 +328,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -283,7 +340,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		groupUuid, err := uuid.Parse(context.Param("group_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -301,7 +357,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -314,7 +369,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		groupUuid, err := uuid.Parse(context.Param("group_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -327,7 +381,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		var requestData TalkingListApplication
 		if err := context.ShouldBindJSON(&requestData); err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -351,7 +404,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -364,7 +416,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		groupUuid, err := uuid.Parse(context.Param("group_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -377,7 +428,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		applicationUuid, err := uuid.Parse(context.Param("application_uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -394,7 +444,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
@@ -454,7 +503,6 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		listUuid, err := uuid.Parse(context.Param("uuid"))
 		if err != nil {
 			context.AbortWithStatus(http.StatusBadRequest)
-			println(err.Error())
 			return
 		}
 
