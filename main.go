@@ -35,6 +35,9 @@ func main() {
 		log.Print("Could not load an existing database, creating a new one.")
 	}
 
+	// Release mode, comment out this line when developing
+	gin.SetMode(gin.ReleaseMode)
+
 	// Setup gin-gonic Library
 	router := gin.New()
 	router.Use(gin.Logger())
