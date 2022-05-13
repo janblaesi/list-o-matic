@@ -67,6 +67,21 @@ type TalkingListContribution struct {
 	Duration time.Duration `json:"duration" binding:"-"`
 }
 
+// TalkingListAttendee represents a person that attends an event
+type TalkingListAttendee struct {
+	// The given name of the attendee
+	GivenName string `json:"given_name" binding:"required"`
+
+	// The surname of the attendee
+	SurName string `json:"sur_name" binding:"required"`
+
+	// The degree of the attendee
+	Degree string `json:"degree" binding:"required"`
+
+	// The e-mail address of the attendee
+	Mail string `json:"mail" binding:"-"`
+}
+
 // TalkingList represents an event, people may talk at.
 type TalkingList struct {
 	// Name of the event
@@ -80,6 +95,9 @@ type TalkingList struct {
 
 	// Talking groups that are part of this event
 	Groups map[uuid.UUID]TalkingListGroup `json:"groups" binding:"-"`
+
+	// List of attendees of this event
+	Attendees map[uuid.UUID]TalkingListAttendee `json:"attendees" binding:"-"`
 
 	// The currently active contribution, if there is one.
 	// When no one is talking, CurrentContribution.InProgress will be false.
