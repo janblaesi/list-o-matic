@@ -529,4 +529,115 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		lists[listUuid] = listEntry
 		dumpListToFile()
 	})
+
+	// Retrieve all attendees in a specific talking list
+	protected.GET("/list/:uuid/attendee", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		context.JSON(http.StatusOK, listEntry.Attendees)
+	})
+
+	// Retrieve a single attendee in a specific talking list
+	protected.GET("/list/:uuid/attendee/:attendee_uuid", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		attendeeUuid, err := uuid.Parse(context.Param("attendee_uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		attendeeEntry, entryPresent := listEntry.Attendees[attendeeUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		context.JSON(http.StatusOK, attendeeEntry)
+	})
+
+	// Create an attendee in a specific talking list
+	protected.POST("/list/:uuid/attendee", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		var requestData TalkingListAttendee
+		if err := context.ShouldBindJSON(&requestData); err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		if listEntry.Attendees == nil {
+			listEntry.Attendees = make(map[uuid.UUID]TalkingListAttendee)
+		}
+
+		attendeeUuid := uuid.New()
+		listEntry.Attendees[attendeeUuid] = requestData
+		lists[listUuid] = listEntry
+		dumpListToFile()
+
+		context.Status(http.StatusCreated)
+	})
+
+	// Delete an attendee from a specific talking list
+	protected.DELETE("/list/:uuid/attendee/:attendee_uuid", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		attendeeUuid, err := uuid.Parse(context.Param("attendee_uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		_, entryPresent = listEntry.Attendees[attendeeUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		delete(listEntry.Attendees, attendeeUuid)
+		lists[listUuid] = listEntry
+		dumpListToFile()
+
+		context.Status(http.StatusOK)
+	})
 }
