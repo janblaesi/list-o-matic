@@ -1,0 +1,32 @@
+---
+geometry: margin=1.5cm
+output: pdf_document
+---
+
+# Redeliste: {{ .Name }}
+
+Report erstellt am {{ timeNow.Format "02.01.2006" }} um {{ timeNow.Format "15:04:05" }}.
+
+## Anwesende Personen
+
+| Vorname | Nachname | Studiengang | E-Mail |
+|---------|----------|-------------|--------|
+{{- range .Attendees }}
+| {{ .GivenName }} | {{ .SurName }} | {{ .Degree }} | {{ .Mail }} |
+{{- end }}
+
+## Redebeiträge
+
+| Name | Gruppe | Startzeit | Endzeit | Dauer |
+|------|--------|-----------|---------|-------|
+{{- range .PastContributions }}
+| {{ .Application.Name }} | {{ getGroupName .GroupUuid }} | {{ .StartTime.Format "15:04:05" }} | {{ .EndTime.Format "15:04:05" }} | {{ prettyDuration .Duration }} |
+{{- end }}
+
+## Redezeitverteilung
+
+| Gruppe | Anzahl Beiträge | Anteil, absolut | Anteil, relativ |
+|--------|-----------------|-----------------|-----------------|
+{{- range $k, $v := .Groups }}
+| {{ (timeDistribution $k).GroupName }} | {{ (timeDistribution $k).NumContributions }} | {{ prettyDuration (timeDistribution $k).TimeShareAbsolute }} | {{ (timeDistribution $k).TimeShareRelative }}% |
+{{- end }}
