@@ -22,11 +22,14 @@
 package main
 
 import (
+	"math"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/hako/durafmt"
 )
 
 func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
@@ -637,6 +640,81 @@ func setupRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 		delete(listEntry.Attendees, attendeeUuid)
 		lists[listUuid] = listEntry
 		dumpListToFile()
+
+		context.Status(http.StatusOK)
+	})
+
+	// Get a Markdown report of an event that may be converted to user-readable PDF format using pandoc
+	protected.GET("/list/:uuid/mdreport", func(context *gin.Context) {
+		listUuid, err := uuid.Parse(context.Param("uuid"))
+		if err != nil {
+			context.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		listEntry, entryPresent := lists[listUuid]
+		if !entryPresent {
+			context.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		// Calculate the time distribution
+		groupTimeShare := make(map[uuid.UUID]time.Duration)
+		groupNumberContributions := make(map[uuid.UUID]uint)
+		totalTime := time.Duration(0)
+		for uuid := range listEntry.Groups {
+			groupTimeShare[uuid] = 0
+		}
+		for _, contribution := range listEntry.PastContributions {
+			groupTimeShare[contribution.GroupUuid] += contribution.Duration
+			groupNumberContributions[contribution.GroupUuid]++
+			totalTime += contribution.Duration
+		}
+
+		// Combine all time distribution data into a structure for use in the template
+		type GroupTimeDistribution struct {
+			GroupName         string
+			NumContributions  uint
+			TimeShareAbsolute time.Duration
+			TimeShareRelative float64
+		}
+		groupTimeDistributions := make(map[uuid.UUID]GroupTimeDistribution)
+		for uuid := range listEntry.Groups {
+			var groupTimeDistribution GroupTimeDistribution
+
+			groupTimeDistribution.GroupName = listEntry.Groups[uuid].Name
+			groupTimeDistribution.NumContributions = groupNumberContributions[uuid]
+			groupTimeDistribution.TimeShareAbsolute = groupTimeShare[uuid]
+			groupTimeDistribution.TimeShareRelative = math.Floor(((groupTimeShare[uuid].Seconds()/totalTime.Seconds())*100)*100) / 100
+
+			groupTimeDistributions[uuid] = groupTimeDistribution
+		}
+
+		context.Header("Content-Type", "text/markdown")
+
+		// Fill template with data and write to HTTP stream
+		reportTemplate := template.Must(template.New("report.got").Funcs(template.FuncMap{
+			"prettyDuration": func(duration time.Duration) string {
+				return durafmt.Parse(duration).LimitFirstN(1).String()
+			},
+			"getGroupName": func(uuid uuid.UUID) string {
+				groupEntry, entryPresent := listEntry.Groups[uuid]
+				if !entryPresent {
+					return ""
+				}
+				return groupEntry.Name
+			},
+			"timeDistribution": func(uuid uuid.UUID) GroupTimeDistribution {
+				return groupTimeDistributions[uuid]
+			},
+			"timeNow": time.Now,
+		}).ParseFiles("report.got"))
+
+		err = reportTemplate.Execute(context.Writer, listEntry)
+		if err != nil {
+			context.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
 		context.Status(http.StatusOK)
 	})
